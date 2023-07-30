@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "478486000886",
+    "project_id": "flutter-cloud-functions-sample",
+    "storage_bucket": "flutter-cloud-functions-sample.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:478486000886:android:067ef401b24dfe5a05a8d7",
+        "android_client_info": {
+          "package_name": "com.tyger.cloudFunctionsSample"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "478486000886-sf0prnnq44e73636919nd7rf2o179291.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3pjfALSrHqwIhUIXVXUZEyzbMVjIBSTw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "478486000886-sf0prnnq44e73636919nd7rf2o179291.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
