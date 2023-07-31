@@ -6,12 +6,42 @@ const spawn = require("child-process-promise").spawn;
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
-const nodemailer = require("nodemailer")
-const gmailEmail = functions.config().gmail.email;
-const gmailPassword = functions.config().gmail.password;
-admin.initializeApp();
+const axios = require("axios").default;
+const serviceAccount = require("./serviceAccountKey.json");
+
+// const nodemailer = require("nodemailer")
+// const gmailEmail = functions.config().gmail.email;
+// const gmailPassword = functions.config().gmail.password;
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+});
 
 const JPEG_EXTENSION = ".jpg";
+
+exports.createCustomToken = functions.region("asia-northeast3").https.onCall(async (data, context) => {
+    const accessToken = data["access_token"];
+
+    const me = await axios.get("https://kapi.kakao.com/v2/user/me", {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    });
+    const userData = me.data;
+    const userId = userData.id;
+    functions.logger.log(userData.email);
+    return admin.auth().createUser({
+        uid: `kakao:${userId}`,
+        email: "boglbbogl@kakao.com",
+        emailVerified: true,
+    }).then((userRecord) => {
+        return admin.auth().createCustomToken(userRecord.uid);
+    }).catch((error) => {
+        return null;
+    });
+
+});
 
 exports.updateUser = functions.region("asia-northeast3").firestore.document("users/{uid}").onUpdate(async (snapshot, context) => {
     const name = snapshot.after.data();
@@ -37,35 +67,35 @@ exports.createProfile = functions.region("asia-northeast3").firestore.document("
     return null;
 });
 
-exports.createUserWithWelcomeEmail = functions.region("asia-northeast3").auth.user().onCreate(async (user) => {
-    const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            user: gmailEmail,
-            pass: gmailPassword,
-        },
-    });
+// exports.createUserWithWelcomeEmail = functions.region("asia-northeast3").auth.user().onCreate(async (user) => {
+//     const transporter = nodemailer.createTransport({
+//         service: "gmail",
+//         auth: {
+//             user: gmailEmail,
+//             pass: gmailPassword,
+//         },
+//     });
 
-    const mailOptions = {
-        from: gmailEmail,
-        to: user.email,
-        subject: "Welcome To My App!",
-        text: `Hey ${user.displayName || ""}! Welcome to My App. I hope you will enjoy our service.`,
-    };
+//     const mailOptions = {
+//         from: gmailEmail,
+//         to: user.email,
+//         subject: "Welcome To My App!",
+//         text: `Hey ${user.displayName || ""}! Welcome to My App. I hope you will enjoy our service.`,
+//     };
 
-    try {
-        await transporter.sendMail(mailOptions);
-        functions.logger.log(
-            `New Welcom email sent to: ${user.email}`,
-            user.email,
-        );
-    } catch (error) {
-        functions.logger.error(
-            `There was an error while sending the email: ${user.email}`,
-            error,
-        );
-    }
-});
+//     try {
+//         await transporter.sendMail(mailOptions);
+//         functions.logger.log(
+//             `New Welcom email sent to: ${user.email}`,
+//             user.email,
+//         );
+//     } catch (error) {
+//         functions.logger.error(
+//             `There was an error while sending the email: ${user.email}`,
+//             error,
+//         );
+//     }
+// });
 
 exports.imageToJPG = functions.region("asia-northeast3").storage.object().onFinalize(async (object) => {
     const filePath = object.name;

@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 
 class MainPage extends StatelessWidget {
   const MainPage({super.key});
@@ -22,7 +25,8 @@ class MainPage extends StatelessWidget {
             onTap: () async {
               UserCredential credential = await FirebaseAuth.instance
                   .createUserWithEmailAndPassword(
-                      email: "abc@gmail.com", password: "123123");
+                      email: "abcde@gmail.com", password: "123123");
+              print(credential.user);
               if (credential.user != null) {
                 await FirebaseFirestore.instance
                     .collection("users")
@@ -40,34 +44,43 @@ class MainPage extends StatelessWidget {
             context: context,
             title: "Update User",
             onTap: () async {
-              User? user = FirebaseAuth.instance.currentUser;
-              if (user != null) {
-                await FirebaseFirestore.instance
-                    .collection("users")
-                    .doc(user.uid)
-                    .update({
-                  "name": "abc",
-                });
-              }
+              // User? user = FirebaseAuth.instance.currentUser;
+              // if (user != null) {
+              //   await FirebaseFirestore.instance
+              //       .collection("users")
+              //       .doc(user.uid)
+              //       .update({
+              //     "name": "abc",
+              //   });
+              // }
             },
           ),
           _button(
             context: context,
-            title: "Delete User",
+            title: "Custom Token",
             onTap: () async {
-              UserCredential credential = await FirebaseAuth.instance
-                  .createUserWithEmailAndPassword(
-                      email: "abc@gmail.com", password: "123123");
-              if (credential.user != null) {
-                await FirebaseFirestore.instance
-                    .collection("users")
-                    .doc(credential.user!.uid)
-                    .set({
-                  "uid": credential.user!.uid,
-                  "email": credential.user!.email,
-                  "name": credential.user!.displayName,
-                  "createdAt": Timestamp.now(),
+              HapticFeedback.mediumImpact();
+              OAuthToken? token = await UserApi.instance.loginWithKakaoTalk();
+              await TokenManagerProvider.instance.manager.setToken(token);
+              final _user = await UserApi.instance.me();
+
+              print(_user.kakaoAccount!.email);
+              try {
+                final result = await FirebaseFunctions.instanceFor(
+                        region: "asia-northeast3")
+                    .httpsCallable('createCustomToken')
+                    .call({
+                  "access_token": token.accessToken,
                 });
+                String customToken = result.data;
+                print(customToken);
+                UserCredential user = await FirebaseAuth.instance
+                    .signInWithCustomToken(customToken);
+                print(user.user!.uid);
+                print(user.user!.email);
+                print(user.user);
+              } on FirebaseException catch (e) {
+                print(e);
               }
             },
           ),
